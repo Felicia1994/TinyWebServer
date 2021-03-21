@@ -20,7 +20,7 @@ const int PORT = 12345;
 int listenfd, connfd;
 sockaddr_in seraddr, cliaddr;
 in_addr sa;
-socklen_t clilen;
+socklen_t serlen,clilen;
 pid_t childpid;
 int connum = 0;
 string recvbuf;
@@ -41,8 +41,7 @@ string UrlDecode(const string &szToDecode)
             result += ' ';
             break;
         case '%':
-            if (isxdigit(szToDecode[i + 1]) && isxdigit(szToDecode[i + 2]))
-            {
+            if (isxdigit(szToDecode[i + 1]) && isxdigit(szToDecode[i + 2])) {
                 string hexStr = szToDecode.substr(i + 1, 2);
                 hex = strtol(hexStr.c_str(), 0, 16);
                 //字母和数字[0-9a-zA-Z]、一些特殊符号[$-_.+!*'(),] 、以及某些保留字[$&+,/:;=?@]
@@ -55,12 +54,10 @@ string UrlDecode(const string &szToDecode)
                 {
                     result += char(hex);
                     i += 2;
-                }
-                else
+                } else {
                     result += '%';
-            }
-            else
-            {
+                }
+            } else {
                 result += '%';
             }
             break;
@@ -79,8 +76,7 @@ void doreverse(char *ptr)
         num++;
     num--;
     int slow = 0;
-    while (slow < num)
-    {
+    while (slow < num) {
         swap(*(ptr + slow), *(ptr + num));
         slow++;
         num--;
@@ -90,8 +86,7 @@ void doreverse(string &str)
 {
     auto iter_begin = str.begin();
     auto iter_end = str.end() - 1;
-    while (iter_begin < iter_end)
-    {
+    while (iter_begin < iter_end) {
         swap(*iter_begin, *(iter_end - 2));
         swap(*(iter_begin + 1), *(iter_end-1));
 
@@ -100,13 +95,13 @@ void doreverse(string &str)
         iter_begin += 3;
     }
 }
+
 string parser(string request)
 {
     string response = "";
-    if (request.substr(0, 4) == "POST")
-    {
+    if (request.substr(0, 4) == "POST") {
         string result = request.substr(request.find("fname") + 6);
-        cout << "fname:" << result << endl;
+        cout << "fname: " << result << endl;
         string dresult = UrlDecode(result);
         doreverse(dresult);
         response += "HTTP/1.0 200 OK\r\n";
@@ -117,9 +112,7 @@ string parser(string request)
         response += "<form accept-charset='utf-8' name='myForm' method='post'>字符串: <input type='text' name='fname'><input type='submit' value='submit'></form>";
         response += "<B>Result: " + dresult + "</B>";
         response += "</HTML>";
-    }
-    else if (request.substr(0, 3) == "GET")
-    {
+    } else if (request.substr(0, 3) == "GET") {
         response += "HTTP/1.0 200 OK\r\n";
         response += "\r\n";
         response += "<HTML><B>hello world!</B>";
@@ -128,20 +121,17 @@ string parser(string request)
         response += "<form accept-charset='utf-8' name='myForm' method='post'>字符串: <input type='text' name='fname'><input type='submit' value='submit'></form>";
 
         response += "</HTML>";
-    }
-    else
-    {
+    } else {
         response = "HTTP/1.0 400 BadRequest\r\n";
     }
-
     return response;
 }
+
 void sig_child(int signo)
 {
     pid_t pid;
     int stat;
-    while ((pid = waitpid(-1, &stat, WNOHANG)) > 0)
-    {
+    while ((pid = waitpid(-1, &stat, WNOHANG)) > 0) {
         //connum--;
         cout << "end child:" << pid << endl;
         //cout << "client number: " << connum << endl;
@@ -159,23 +149,18 @@ void print_addr(const sockaddr_in cliaddr)
 void my_echo(int connfd)
 {
     int n;
-    while (1)
-    {
-        if (n = (recv(connfd, recvbuf_c, BUFSIZE, 0)) > 0)
-        {
-            cout << "get request "
-                 << "from: ";
+    while (1) {
+        n = recv(connfd, recvbuf_c, BUFSIZE, 0);
+        if (n > 0) {
+            cout << "get request from: ";
             print_addr(cliaddr);
             string response = parser(string(recvbuf_c));
             //doreverse(recvbuf);
-            if (send(connfd, response.c_str(), response.length() * sizeof(char), 0) <= 0)
-            {
+            if (send(connfd, response.c_str(), response.length() * sizeof(char), 0) <= 0) {
                 cout << "send error" << endl;
                 break;
             }
-        }
-        else
-        {
+        } else {
             cout << "read error" << endl;
             break;
         }
@@ -183,36 +168,44 @@ void my_echo(int connfd)
 }
 int main()
 {
+    // AF_INET: IPv4 protocols
+    // SOCK_STREAM: stream socket
+    // 0: default specific protocol
+    // return int: non-neg if OK, or -1 if error
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
+
     seraddr.sin_family = AF_INET;
-    seraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    // htonl converts the unsigned integer hostlong from host byte order to network byte order
+    seraddr.sin_addr.s_addr = htonl(INADDR_ANY); // bind the socket to all available interfaces
+    // htons converts the unsigned short integer hostshort from host byte order to network byte order
     seraddr.sin_port = htons(PORT);
-    bind(listenfd, (sockaddr *)&seraddr, sizeof(seraddr));
+
+    // assign a local protocol address to a socket
+    serlen = sizeof(seraddr);
+    bind(listenfd, (sockaddr *)&seraddr, serlen);
+
     listen(listenfd, LISTENQ);
+
     signal(SIGCHLD, sig_child);
     cout << "Begin to listen" << endl;
-    while (1)
-    {
+    while (1) {
+
         clilen = sizeof(cliaddr);
-        if ((connfd = accept(listenfd, (sockaddr *)&cliaddr, &clilen)) < 0)
-        {
+        connfd = accept(listenfd, (sockaddr *)&cliaddr, &clilen); // return int: non-neg if OK, or -1 if error
+
+        if (connfd < 0) {
             if (errno == EINTR)
                 continue;
             else
                 exit(0);
-        }
-        else
-        {
-            if ((childpid = fork()) == 0)
-            {
-                //child
+        } else {
+            childpid = fork(); // return pid_t (int): 0 if child, process ID of child if parent, or -1 if error
+            if (childpid == 0) {
                 close(listenfd);
                 my_echo(connfd);
                 cout << "end the echo" << endl;
                 exit(0);
-            }
-            else
-            {
+            } else {
                 connum++;
                 cout << "client number:  " << connum << endl;
                 close(connfd);

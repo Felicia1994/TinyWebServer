@@ -56,11 +56,15 @@ void my_send(int connfd, char *msg)
 }
 int main(int argc, char **argv)
 {
+    // AF_INET: IPv4 protocols
+    // SOCK_STREAM: stream socket
+    // 0: default specific protocol
+    // return int: non-neg if OK, or -1 if error
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    
     
     seraddr.sin_family = AF_INET;
     inet_pton(AF_INET,argv[1],&seraddr.sin_addr);
+    // htons converts the unsigned short integer hostshort from host byte order to network byte order
     seraddr.sin_port = htons(PORT);
 
     connect(sockfd, (sockaddr *)&seraddr, sizeof(seraddr));
