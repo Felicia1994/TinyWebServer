@@ -58,6 +58,7 @@ int main(int argc, char **argv)
 {
     // a
     // b
+    // c
     // AF_INET: IPv4 protocols
     // SOCK_STREAM: stream socket
     // 0: default specific protocol
