@@ -17,7 +17,6 @@ const int BUFSIZE = 1024;
 const int LISTENQ = 5;
 const int PORT = 12345;
 //var
-int listenfd, connfd;
 sockaddr_in seraddr, cliaddr;
 in_addr sa;
 socklen_t serlen,clilen;
@@ -172,26 +171,30 @@ int main()
     // SOCK_STREAM: stream socket
     // 0: default specific protocol
     // return int: non-neg if OK, or -1 if error
-    listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    int listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    cout << "listen: " << listenfd << endl;
 
     seraddr.sin_family = AF_INET;
     // htonl converts the unsigned integer hostlong from host byte order to network byte order
     seraddr.sin_addr.s_addr = htonl(INADDR_ANY); // bind the socket to all available interfaces
     // htons converts the unsigned short integer hostshort from host byte order to network byte order
     seraddr.sin_port = htons(PORT);
+    cout << seraddr.sin_addr.s_addr << endl;
 
     // assign a local protocol address to a socket
     serlen = sizeof(seraddr);
-    bind(listenfd, (sockaddr *)&seraddr, serlen);
+    bind(listenfd, (const struct sockaddr *)&seraddr, serlen);
 
-    listen(listenfd, LISTENQ);
+    int listen_ = listen(listenfd, LISTENQ);
+    cout << "listen_: " << listen_ << endl;
 
-    signal(SIGCHLD, sig_child);
+    // signal(SIGCHLD, sig_child); ////// this is why it didn't work!!!!!! why this line????????????
     cout << "Begin to listen" << endl;
     while (1) {
 
         clilen = sizeof(cliaddr);
-        connfd = accept(listenfd, (sockaddr *)&cliaddr, &clilen); // return int: non-neg if OK, or -1 if error
+        int connfd = accept(listenfd, (sockaddr *)&cliaddr, &clilen); // return int: non-neg if OK, or -1 if error
+        cout << connfd << endl;
 
         if (connfd < 0) {
             if (errno == EINTR)
