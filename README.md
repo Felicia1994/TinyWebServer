@@ -10,3 +10,4 @@
 
 #### client-select.cpp and server-select.cpp are relatively higher level
 
+#### use '''nc -zv 127.0.0.1 12345''' to check if the port 12345 is able to connect
