@@ -19,17 +19,13 @@ const int PORT = 12345;
 //var
 sockaddr_in seraddr, cliaddr;
 in_addr sa;
-socklen_t serlen,clilen;
-pid_t childpid;
+pid_t pid;
 int connum = 0;
-string recvbuf;
-string sendbuf;
-char recvbuf_c[BUFSIZE];
-char sendbuf_c[BUFSIZE];
+char sendbuf[BUFSIZE];
+char recvbuf[BUFSIZE];
 //func
 
-string UrlDecode(const string &szToDecode)
-{
+string UrlDecode(const string& szToDecode) {
     string result;
     int hex = 0;
     for (size_t i = 0; i < szToDecode.length(); ++i)
@@ -67,9 +63,7 @@ string UrlDecode(const string &szToDecode)
     }
     return result;
 }
-
-void doreverse(char *ptr)
-{
+void doreverse(char *ptr) {
     int num = 0;
     while (*(ptr + num) != '\0')
         num++;
@@ -81,8 +75,7 @@ void doreverse(char *ptr)
         num--;
     }
 }
-void doreverse(string &str)
-{
+void doreverse(string &str) {
     auto iter_begin = str.begin();
     auto iter_end = str.end() - 1;
     while (iter_begin < iter_end) {
@@ -94,9 +87,7 @@ void doreverse(string &str)
         iter_begin += 3;
     }
 }
-
-string parser(string request)
-{
+string my_parser(string request) {
     string response = "";
     if (request.substr(0, 4) == "POST") {
         string result = request.substr(request.find("fname") + 6);
@@ -125,98 +116,118 @@ string parser(string request)
     }
     return response;
 }
-
-void sig_child(int signo)
-{
+void sig_child(int signo) {
     pid_t pid;
     int stat;
     while ((pid = waitpid(-1, &stat, WNOHANG)) > 0) {
-        //connum--;
-        cout << "end child:" << pid << endl;
-        //cout << "client number: " << connum << endl;
+        cout << "child process " << pid << " ends now!" << endl;
+        cout << "there are " << --connum << " clients still connected!" << endl;
     }
-
     return;
 }
-void print_addr(const sockaddr_in cliaddr)
-{
+void my_print_addr(const sockaddr_in cliaddr) {
     sa.s_addr = cliaddr.sin_addr.s_addr;
-    cout << inet_ntoa(sa) << ":";
-    cout << htons(cliaddr.sin_port) << endl;
+    cout << "receive ok! receive from: " << inet_ntoa(sa) << " port: " << htons(cliaddr.sin_port) << endl;
 }
-
-void my_echo(int connfd)
-{
-    int n;
+void my_echo(int connfd) {
     while (1) {
-        n = recv(connfd, recvbuf_c, BUFSIZE, 0);
-        if (n > 0) {
-            cout << "get request from: ";
-            print_addr(cliaddr);
-            string response = parser(string(recvbuf_c));
-            //doreverse(recvbuf);
-            if (send(connfd, response.c_str(), response.length() * sizeof(char), 0) <= 0) {
-                cout << "send error" << endl;
+        int recv_ = recv(connfd, recvbuf, BUFSIZE, 0);
+        if (recv_==-1) {
+            cout << "receive error!" << endl;
+            cout << strerror(errno) << endl;
+            break;
+        } else if (recv_==0) {
+            cout << "no more message received!" << endl;
+            break;
+        } else {
+            my_print_addr(cliaddr);
+            cout << "message is: " << recvbuf << endl;
+            string response = my_parser(string(recvbuf));
+            int send_ = send(connfd, response.c_str(), response.length() * sizeof(char), 0);
+            if (send_==-1) {
+                cout << "send error!" << endl;
+                cout << strerror(errno) << endl;
                 break;
             }
-        } else {
-            cout << "read error" << endl;
-            break;
         }
     }
 }
-int main()
-{
+int main(int argc, char **argv) {
     // AF_INET: IPv4 protocols
     // SOCK_STREAM: stream socket
     // 0: default specific protocol
     // return int: non-neg if OK, or -1 if error
     int listenfd = socket(AF_INET, SOCK_STREAM, 0);
-    cout << "listen: " << listenfd << endl;
+    if (listenfd==-1) {
+        cout << "socket error!" << endl;
+        return -1;
+    } else {
+        cout << "listen socket ok! listen socket number: " << listenfd << endl;
+    }
 
+    bzero(&seraddr, sizeof(seraddr));
     seraddr.sin_family = AF_INET;
     // htonl converts the unsigned integer hostlong from host byte order to network byte order
     seraddr.sin_addr.s_addr = htonl(INADDR_ANY); // bind the socket to all available interfaces
     // htons converts the unsigned short integer hostshort from host byte order to network byte order
-    seraddr.sin_port = htons(PORT);
-    cout << seraddr.sin_addr.s_addr << endl;
+    int portaddr = 12345;
+    if (argc>=2) portaddr = stoi(argv[1]);
+    seraddr.sin_port = htons(portaddr);
+    cout << "address ok! port: " << portaddr << endl;
 
     // assign a local protocol address to a socket
-    serlen = sizeof(seraddr);
-    bind(listenfd, (const struct sockaddr *)&seraddr, serlen);
+    int bind_ = ::bind(listenfd, (const struct sockaddr *)&seraddr, sizeof(seraddr));
+    if (bind_==-1) {
+        cout << "bind error!" << endl;
+        cout << strerror(errno) << endl;
+        close(listenfd);
+        return -1;
+    } else {
+        cout << "bind ok!" << endl;
+    }
 
     int listen_ = listen(listenfd, LISTENQ);
-    cout << "listen_: " << listen_ << endl;
+    if (listen_==-1) {
+        cout << "listen error!" << endl;
+        cout << strerror(errno) << endl;
+        close(listenfd);
+        return -1;
+    } else {
+        cout << "listen ok!" << endl;
+    }
 
-    // signal(SIGCHLD, sig_child); ////// this is why it didn't work!!!!!! why this line????????????
-    cout << "Begin to listen" << endl;
+    signal(SIGCHLD, sig_child); // i deleted this line so that the program worked, but now it still works with this line!!!???
+    cout << "begin to listen!" << endl;
     while (1) {
-
-        clilen = sizeof(cliaddr);
+        socklen_t clilen = sizeof(cliaddr);
         int connfd = accept(listenfd, (sockaddr *)&cliaddr, &clilen); // return int: non-neg if OK, or -1 if error
-        cout << connfd << endl;
-
-        if (connfd < 0) {
-            if (errno == EINTR)
-                continue;
-            else
-                exit(0);
-        } else {
-            childpid = fork(); // return pid_t (int): 0 if child, process ID of child if parent, or -1 if error
-            if (childpid == 0) {
+        if (connfd==-1) {
+            cout << "accept error!" << endl;
+            cout << strerror(errno) << endl;
+            if (errno == EINTR) continue;
+            else {
                 close(listenfd);
-                my_echo(connfd);
-                cout << "end the echo" << endl;
-                exit(0);
-            } else {
-                connum++;
-                cout << "client number:  " << connum << endl;
+                return -1;
+            }
+        } else {
+            pid = fork(); // return pid_t (int): 0 if child, pid of child if parent, or -1 if error
+            if (pid==-1) {
+                cout << "fork error!" << endl;
+                cout << strerror(errno) << endl;
+                close(listenfd);
                 close(connfd);
+                return -1;
+            } else if (pid == 0) { // child
+                close(listenfd);
+                cout << "child precess " << getpid() << " starts now!" << endl;
+                my_echo(connfd);
+                exit(0);
+            } else { // parent
+                close(connfd);
+                cout << "one more client! there are " << ++connum << " clients being connected!" << endl;
             }
         }
     }
-
-    exit(0);
-
+    close(listenfd);
     return 0;
 }

@@ -14,16 +14,15 @@ using namespace std;
 const int BUFSIZE = 1024;
 // var
 sockaddr_in seraddr;
-pid_t childpid;
-char recvbuf[BUFSIZE];
 char sendbuf[BUFSIZE];
+char recvbuf[BUFSIZE];
 // func
 void my_send(int connfd)
 {
     while (1)
     {
         cout << "waiting for message! input \"exit\" to exit!" << endl;
-        cin >> sendbuf;
+        cin.getline(sendbuf, BUFSIZE);
         cout << "message ok! message: " << sendbuf << endl;
 
         if (strncmp(sendbuf,"exit",2)==0) {
@@ -91,6 +90,5 @@ int main(int argc, char **argv)
     cout << "all send ok!" << endl;
     close(sockfd);
     cout << "connect close!" << endl;
-    exit(0);
     return 0;
 }
