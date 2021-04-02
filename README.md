@@ -10,4 +10,6 @@
 
 #### client-select.cpp and server-select.cpp are relatively higher level
 
-#### use '''nc -zv 127.0.0.1 12345''' to check if the port 12345 is able to connect
+#### use ''nc -zv 127.0.0.1 12345'' from the client side to check if the port 12345 is able to connect
+
+#### use ''ps -fA | grep g++'' to check c++ processes that are running
