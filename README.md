@@ -17,3 +17,5 @@
 #### <sys/socket.h> has bind function, while C++11 introduced its own std::bind function into namespace std
 
 #### either remove using namespace std, or use ::bind to denote it's in the global namespace
+
+#### the original version does work when you don't compile with c++11 !!!
