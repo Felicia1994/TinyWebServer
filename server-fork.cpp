@@ -15,7 +15,6 @@ using namespace std;
 //const
 const int BUFSIZE = 1024;
 const int LISTENQ = 5;
-const int PORT = 12345;
 //var
 sockaddr_in seraddr, cliaddr;
 in_addr sa;

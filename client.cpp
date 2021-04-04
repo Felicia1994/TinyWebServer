@@ -25,7 +25,7 @@ void my_send(int connfd)
         cin.getline(sendbuf, BUFSIZE);
         cout << "message ok! message: " << sendbuf << endl;
 
-        if (strncmp(sendbuf,"exit",2)==0) {
+        if (string(sendbuf)=="exit") {
             cout << "send ends!" << endl;
             break;
         }
