@@ -6,9 +6,9 @@
 
 ### notes
 
-#### client.cpp and server-fork.cpp are the basics
+#### client.cpp is for client end
 
-#### client-select.cpp and server-select.cpp are relatively higher level
+#### server-fork.cpp and server-select.cpp are for server end
 
 #### use ''nc -zv 127.0.0.1 12345'' from the client side to check if the port 12345 is able to connect
 

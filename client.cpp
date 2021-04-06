@@ -39,6 +39,7 @@ void my_send(int connfd)
             cout << "send ok! message: " << sendbuf << endl;
         }
 
+        memset(recvbuf, 0, sizeof(recvbuf));
         int recv_ = recv(connfd, recvbuf, BUFSIZE, 0);
         if (recv_==-1) {
             cout << "receive error!" << endl;
